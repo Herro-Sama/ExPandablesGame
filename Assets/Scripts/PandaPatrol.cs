@@ -20,6 +20,9 @@ public class PandaPatrol : MonoBehaviour
     [SerializeField]
     private float turnSpeed = 300f;
 
+    [SerializeField]
+    private float attackRange = 5f;
+
     private float counter;
     private float nextWaitTime;
 
@@ -27,6 +30,8 @@ public class PandaPatrol : MonoBehaviour
     private IEnumerator turnLeft;
 
     private Animator animator;
+
+    private Transform target;
 
     private void Awake()
     {
@@ -43,6 +48,13 @@ public class PandaPatrol : MonoBehaviour
 
         turnLeft = TurnToLeft(transform.GetChild(0));
         turnRight = TurnToRight(transform.GetChild(0));
+    }
+
+    private void Start()
+    {
+        GameObject ply = GameObject.FindGameObjectWithTag("Player");
+        if(ply)
+            target = ply.transform;
     }
 
     private void Update()
@@ -77,7 +89,32 @@ public class PandaPatrol : MonoBehaviour
             turnRight = TurnToRight(transform.GetChild(0));
             StartCoroutine(turnRight);
         }
-        
+
+        rektCooldown -= Time.deltaTime;
+
+        // Attack
+        if (target == null)
+        {
+            return;
+        }
+        if((movingRight && target.position.x > transform.position.x) || (!movingRight && target.position.x < transform.position.x))
+        {
+            if (Vector3.Distance(transform.position, target.position) <= attackRange)
+            {
+                still = false;
+                Flip();
+                animator.SetBool("isHitting", true);
+                Invoke("GetRekt", 0.35f);
+            }
+            else
+            {
+                animator.SetBool("isHitting", false);
+            }
+        }      
+        else
+        {
+            animator.SetBool("isHitting", false);
+        }
     }
 
     private void Flip()
@@ -109,5 +146,17 @@ public class PandaPatrol : MonoBehaviour
             tran.Rotate(0, (Time.deltaTime * turnSpeed), 0);
             yield return null;
         }
+    }
+
+    float rektCooldown = 0f;
+    private void GetRekt()
+    {
+        if(rektCooldown > 0)
+        {
+            return;
+        }
+        target.GetComponent<Rigidbody>().AddExplosionForce(1000f, transform.position, 200f);
+        CancelInvoke("GetRekt");
+        rektCooldown = 1;
     }
 }

@@ -26,7 +26,7 @@ public class PlayerMovement : MonoBehaviour
     private IEnumerator turnRight;
     private IEnumerator turnLeft;
     float idleTime = 0f;
-    float timeUntilWave = 2.5f;
+    float timeUntilWave = 4.5f;
     private bool aboutToJump = false;
     [SerializeField]
     private float turnSpeed = 300f;
