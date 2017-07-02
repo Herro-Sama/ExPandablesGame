@@ -30,7 +30,7 @@ public class PandaPatrol : MonoBehaviour
     private IEnumerator turnLeft;
 
     private Animator animator;
-
+	public float damage = 3000;
     private Transform target;
 
     private void Awake()
@@ -38,9 +38,7 @@ public class PandaPatrol : MonoBehaviour
         animator = transform.GetChild(0).GetComponent<Animator>();
 
         maxLeft = transform.parent.GetChild(1).position.x;
-        maxRight = transform.parent.GetChild(2).position.x;
-
-        Debug.Log(maxRight);
+		maxRight = transform.parent.GetChild (2).position.x;
 
         movingRight = true;
         still = false;
@@ -155,7 +153,7 @@ public class PandaPatrol : MonoBehaviour
         {
             return;
         }
-        target.GetComponent<Rigidbody>().AddExplosionForce(1000f, transform.position, 200f);
+		target.GetComponent<Rigidbody>().AddExplosionForce(damage, transform.position, 200f);
         CancelInvoke("GetRekt");
         rektCooldown = 1;
     }

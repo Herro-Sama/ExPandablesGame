@@ -20,7 +20,7 @@ public class CameraFollow : MonoBehaviour
     {
         //transform.position = Player.transform.position + offset;
 
-        Vector3 newPosition = Player.transform.position;
+		Vector3 newPosition = Player.transform.position + new Vector3(0, 6, 0);
         newPosition.z = -10;
         transform.position = Vector3.Slerp(transform.position, newPosition, FollowSpeed * Time.deltaTime);
     }

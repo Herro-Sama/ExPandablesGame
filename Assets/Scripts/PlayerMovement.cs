@@ -4,8 +4,8 @@ using UnityEngine;
 
 public class PlayerMovement : MonoBehaviour
 {
-
-    private float playerChargeJumpForce = 8.0f;
+    [SerializeField]
+    private float playerChargeJumpForce = 11.0f;
     private float OnGroundTimer = 1f;
     private bool playerOnGround = false;
     private int playerCurrentJumps = 0;
@@ -34,6 +34,7 @@ public class PlayerMovement : MonoBehaviour
     private Animator charAnimator;
     private bool facingRight = true;
 
+    private bool goofedPowerJump = false;
     private float movement = 0;
 
     private bool FacingRight
@@ -67,7 +68,28 @@ public class PlayerMovement : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+		if (playerOnGround == true)
+		{
+			OnGroundTimer += Time.deltaTime;
+			//OnGroundTimer -= JumpComboDecayRate;
+			if (OnGroundTimer > 0.3f) {
+				superJump = false;
+				jumped = false;
+			} else {
+				superJump = true;
+			}
+		}
+        else
+        {
+            if(Input.GetKeyDown(KeyCode.Space))
+            {
+                goofedPowerJump = true;
+            }
+        }
+
         float playerHorizontalMovement = Input.GetAxis("Horizontal");
+
+		Debug.Log (OnGroundTimer);
 
         // Animation
         idleTime += Time.deltaTime;
@@ -123,125 +145,60 @@ public class PlayerMovement : MonoBehaviour
         playerHorizontalMovement *= Time.deltaTime * PlayerSpeed;
         movement = playerHorizontalMovement;
 
-        if (Input.GetButton("Jump"))
+		if (Input.GetButton("Jump") && playerOnGround)
         {
-            playerChargeJumpForce += PlayerJumpChargeSpeed;
             // Animation
             aboutToJump = true;
             AboutToJumpCooldown();
+			mov = playerHorizontalMovement;
+			if (superJump && jumped) {
+				Invoke ("LiftOff", 0.03f);
+			} else {
+				Invoke ("LiftOff", 0.23f);
+			}
         }
-
-        if (Input.GetButtonUp("Jump"))
-        {
-            if (OnGroundTimer == 0)
-            {
-                playerCurrentJumps = 0;
-                OnGroundTimer = TotalPlayerOnGroundTime;
-            }
-
-            if (playerChargeJumpForce >= PlayerJumpMinHeight)
-            {
-                PlayerLongJumping = true;
-            }
-
-            Jump(playerHorizontalMovement);
-            OnGroundTimer = TotalPlayerOnGroundTime;
-
-            if (playerCurrentJumps == playerMaxJumpCombo)
-            {
-                print("Jump Reset");
-                playerCurrentJumps = 0;
-            }
-
-        }
+			
     }
 
+	float mov;
+	void LiftOff()
+	{
+		Jump(mov);
+	}
 
     void FixedUpdate()
     {
         
-        if (playerOnGround == true)
-        {
-            OnGroundTimer -= JumpComboDecayRate;
-            if (OnGroundTimer <= 0 && playerCurrentJumps >= 1)
-            {
-                print("Jump Reset because of TimeOut");
-                playerCurrentJumps = 0;
-            }
-        }
+       
 
         transform.Translate(movement, 0, 0);
     }
 
+	bool superJump = false;
+	bool jumped = false;
     void Jump(float HorizontalMotion)
     {
         if (playerOnGround == true)
         {
-            GameManager.instance.PlaySound(4);
+			jumped = true;
+			playerCurrentJumps++;
+			GameManager.instance.PlaySound(4);
+			playerOnGround = false;
+			if (superJump && jumped && !goofedPowerJump) {
+				rb.velocity = new Vector3(0, playerChargeJumpForce*1.3f, 0);
+				playerCurrentJumps = 0;
+			} else {
+				rb.velocity = new Vector3(0, playerChargeJumpForce, 0);
+			}
 
-            playerOnGround = false;
-            OnGroundTimer = TotalPlayerOnGroundTime;
-            if (playerCurrentJumps == 0)
-            {
-                if (playerChargeJumpForce >= PlayerJumpMaxHeight)
-                {
-                    Mathf.Clamp(playerChargeJumpForce, 0, PlayerJumpMaxHeight);
-                    playerCurrentJumps++;
-                    rb.velocity = new Vector3(0, PlayerJumpMaxHeight, 0);
-                    playerChargeJumpForce = PlayerJumpMinHeight;
-                }
-
-                else
-                {
-                    playerCurrentJumps++;
-                    rb.velocity = new Vector3(0, playerChargeJumpForce, 0);
-                    playerChargeJumpForce = PlayerJumpMinHeight;
-
-                }
-            }
-            else
-            {
-                if (playerChargeJumpForce >= PlayerJumpMaxHeight)
-                {
-                    Mathf.Clamp(playerChargeJumpForce, 0, PlayerJumpMaxHeight);
-                    playerCurrentJumps++;
-                    if (PlayerLongJumping == true)
-                    {
-                        rb.velocity = new Vector3(0, (PlayerJumpMaxHeight * (playerCurrentJumps / 2.5f)), 0);
-                        playerChargeJumpForce = PlayerJumpMinHeight;
-                        PlayerLongJumping = false;
-                    }
-                    else
-                    {
-                        rb.velocity = new Vector3(0, (PlayerJumpMaxHeight * (playerCurrentJumps / 1.5f)), 0);
-                        playerChargeJumpForce = PlayerJumpMinHeight;
-                    }
-                }
-
-                else
-                {
-                    playerCurrentJumps++;
-                    if (PlayerLongJumping == true)
-                    {
-                        rb.velocity = new Vector3((HorizontalMotion * 20), (PlayerJumpMaxHeight * (playerCurrentJumps / 3f)), 0);
-                        playerChargeJumpForce = PlayerJumpMinHeight;
-                        PlayerLongJumping = false;
-                    }
-                    else
-                    {
-                        rb.velocity = new Vector3(0, (playerChargeJumpForce * (playerCurrentJumps / 1.5f)), 0);
-                        playerChargeJumpForce = PlayerJumpMinHeight;
-                    }
-
-                }
-            }
-
+            goofedPowerJump = false;
         }
     }
     void OnCollisionEnter(Collision collision)
     {
         if (collision.gameObject.tag == "Ground")
         {
+			OnGroundTimer = 0f;
             playerOnGround = true;
         }
 
